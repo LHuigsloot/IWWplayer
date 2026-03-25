@@ -38,6 +38,7 @@ namespace IWWplayer
         private void loadMedia_Click(object sender, EventArgs e)
         {
             videoPlayer.loadVideo();
+            //audioPlayer is still WIP.
             audioPlayer.URL = videoPlayer.getVideoFile();
             audioPlayer.controls.stop();
             if (videoPlayer.videoFileLoaded())
