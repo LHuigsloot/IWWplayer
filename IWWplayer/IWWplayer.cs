@@ -25,6 +25,7 @@ namespace IWWplayer
         public IWWplayer()
         {
             InitializeComponent();
+            this.DoubleBuffered = true;
             videoProcessor = new VideoProcessor();
             videoPlayer = new VideoPlayer(imageBox1, videoProcessor);
             audioPlayer = new WindowsMediaPlayer();

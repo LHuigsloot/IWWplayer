@@ -23,14 +23,13 @@ namespace IWWplayer
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
             this.mediaControlsPanel = new System.Windows.Forms.FlowLayoutPanel();
             this.removeWindowboxing = new System.Windows.Forms.CheckBox();
             this.loadMedia = new System.Windows.Forms.Button();
             this.playMedia = new System.Windows.Forms.Button();
             this.pauseMedia = new System.Windows.Forms.Button();
             this.mainLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.imageBox1 = new Emgu.CV.UI.ImageBox();
+            this.imageBox1 = new System.Windows.Forms.PictureBox();
             this.mediaControlsPanel.SuspendLayout();
             this.mainLayoutPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.imageBox1)).BeginInit();
@@ -118,7 +117,7 @@ namespace IWWplayer
             this.imageBox1.Name = "imageBox1";
             this.imageBox1.Size = new System.Drawing.Size(794, 399);
             this.imageBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this.imageBox1.TabIndex = 2;
+            this.imageBox1.TabIndex = 4;
             this.imageBox1.TabStop = false;
             // 
             // IWWplayer
@@ -146,7 +145,7 @@ namespace IWWplayer
         private System.Windows.Forms.Button pauseMedia;
         private System.Windows.Forms.TableLayoutPanel mainLayoutPanel;
         private System.Windows.Forms.Button playMedia;
-        private Emgu.CV.UI.ImageBox imageBox1;
+        private System.Windows.Forms.PictureBox imageBox1;
     }
 }
 
