@@ -45,12 +45,22 @@ namespace IWWplayer
 
         public void loadVideo()
         {
+            pauseMedia();
+            if (capture != null)
+            {
+                capture.Dispose();
+                capture = null;
+            }
+            if (videoFile != null)
+            {
+                videoFile = null;
+            }
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "MP4 files (*.mp4)|*.mp4";
             if(openFileDialog.ShowDialog() == DialogResult.OK)
             {
                 videoFile = openFileDialog.FileName;
-            } 
+            }
         }
 
         public void playVideo()
