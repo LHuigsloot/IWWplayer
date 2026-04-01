@@ -19,14 +19,13 @@ namespace IWWplayer
         private readonly bool LETTERBOXING = true;
         private readonly bool PILLARBOXING = false;
 
-        private String videoFile;
         private String processedVideoFile;
         private bool removeWindowbox = false;
         private int letterboxingHeight = 0;
         private int pillarboxingWidth = 0;
 
 
-        public Mat processFrame(Mat frame)
+        public Mat processFrame(Mat frame, String videoFile)
         {
             if (removeWindowbox)
             {
@@ -42,7 +41,7 @@ namespace IWWplayer
             }
         }
 
-        public void toggleWindowboxing()
+        public void toggleWindowboxing(String videoFile)
         {
             if (removeWindowbox)
             {
@@ -60,11 +59,6 @@ namespace IWWplayer
                     setWindowboxing(videoFile);
                 }
             }
-        }
-
-        public void setVideoFile(String videoFile)
-        {
-            this.videoFile = videoFile;
         }
 
         private Mat removeWindowboxing(Mat frame)
@@ -119,11 +113,6 @@ namespace IWWplayer
             List<Mat> frames = new List<Mat>();
             using (VideoCapture capture = new VideoCapture(videoFile))
             {
-                if (!capture.IsOpened)
-                {
-                    throw new Exception("Could not open video file.");
-                }
-
                 double totalFrames = capture.Get(Emgu.CV.CvEnum.CapProp.FrameCount);
                 double frameInterval = totalFrames / numberOfFrames;
 

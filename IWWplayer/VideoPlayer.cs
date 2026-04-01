@@ -18,59 +18,31 @@ namespace IWWplayer
 
         private VideoCapture capture;
         private bool captureInProgress;
-        private PictureBox videoBox;
-        private String videoFile;
         private Stopwatch stopwatch;
         private double frameTime;
 
-        private VideoProcessor videoProcessor;
-
-        public VideoPlayer(PictureBox videoBox, VideoProcessor videoProcessor)
+        public VideoPlayer()
         {
-            this.videoBox = videoBox;
-            this.videoProcessor = videoProcessor;
             stopwatch = new Stopwatch();
-        }
-
-        public bool videoFileLoaded()
-        {
-            return videoFile != null;
-        }
-
-        public String getVideoFile()
-        {
-            return videoFile;
         }
 
         public void loadVideo()
         {
-            pauseMedia();
+            pauseVideo();
             if (capture != null)
             {
                 capture.Dispose();
                 capture = null;
             }
-            if (videoFile != null)
-            {
-                videoFile = null;
-                videoProcessor.setVideoFile(null);
-            }
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "MP4 files (*.mp4)|*.mp4";
-            if(openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                videoFile = openFileDialog.FileName;
-                videoProcessor.setVideoFile(videoFile);
-            }
         }
 
-        public void playVideo()
+        public void playVideo(String videoFile)
         {
             if (!captureInProgress)
             {
                 if (capture == null)
                 {
-                    startNewCapture();
+                    startNewCapture(videoFile);
                 }
                 else
                 {
@@ -79,7 +51,7 @@ namespace IWWplayer
             }
         }
 
-        public void pauseMedia()
+        public void pauseVideo()
         {
             if (capture != null && captureInProgress)
             {
@@ -90,13 +62,7 @@ namespace IWWplayer
             }
         }
 
-        public void toggleWindowboxing()
-        {
-            //A videoController class should be made to handle this, but for now it is here.
-            videoProcessor.toggleWindowboxing();
-        }
-
-        private void startNewCapture()
+        private void startNewCapture(String videoFile)
         {
             capture = new VideoCapture(videoFile);
             double aSecondInMilliSeconds = 1000.0;
@@ -111,6 +77,11 @@ namespace IWWplayer
             capture.ImageGrabbed += processFrame;
         }
 
+        //1. gather frames into buffer
+        //2. process frames if needed.
+        //3. display frames at correct time.
+
+        //HHMMMMM, Where should this be done?
         private void processFrame(object sender, EventArgs e)
         {
             if (capture != null && capture.Ptr != IntPtr.Zero && captureInProgress)
@@ -120,9 +91,9 @@ namespace IWWplayer
                 Mat frame = new Mat();
                 capture.Retrieve(frame);
 
-                frame = videoProcessor.processFrame(frame);
+                //FIX: frame = videoProcessor.processFrame(frame);
            
-                crossThreadSafeDisplayFrame(frame);
+                //FIX: crossThreadSafeDisplayFrame(frame);
 
                 double elapsedTime = stopwatch.Elapsed.TotalMilliseconds;
                 double remainingTime = frameTime - elapsedTime;
@@ -136,22 +107,22 @@ namespace IWWplayer
             }
         }
 
-        private void crossThreadSafeDisplayFrame(Mat frame)
+        private void crossThreadSafeDisplayFrame(Mat frame, PictureBox videoBox)
         {
             if (videoBox.InvokeRequired)
             {
                 videoBox.Invoke(new Action(() =>
                 {
-                    displayFrame(frame);
+                    displayFrame(frame, videoBox);
                 }));
             }
             else
             {
-                displayFrame(frame);
+                displayFrame(frame, videoBox);
             }
         }
 
-        private void displayFrame(Mat frame)
+        private void displayFrame(Mat frame, PictureBox videoBox)
         {
             var currentImage = videoBox.Image;
             videoBox.Image = frame.ToBitmap();
