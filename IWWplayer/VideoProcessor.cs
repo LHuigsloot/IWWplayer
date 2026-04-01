@@ -8,21 +8,72 @@ using Emgu.CV;
 using Emgu.CV.Structure;
 using System.Drawing.Printing;
 using System.Windows.Forms;
+using System.Text.RegularExpressions;
 
 namespace IWWplayer
 {
     class VideoProcessor
     {
-        private int BLACKPIXELTHRESHOLD = 3;
+        private readonly int NUMBEROFFRAMES = 10; //number of frames to analyze for windowboxing, EXPONENTIALY INCREASES PROCESSING TIME!!!
+        private readonly int BLACKPIXELTHRESHOLD = 3; //threshold for counting a pixel as black, can be adjusted for different videos, but should be low to avoid cutting into the actual video content
+        private readonly bool LETTERBOXING = true;
+        private readonly bool PILLARBOXING = false;
+
+        private String videoFile;
+        private String processedVideoFile;
+        private bool removeWindowbox = false;
         private int letterboxingHeight = 0;
         private int pillarboxingWidth = 0;
 
-        public Mat removeWindowboxing(Mat frame)
+
+        public Mat processFrame(Mat frame)
+        {
+            if (removeWindowbox)
+            {
+                if (videoFile != processedVideoFile)
+                {
+                    setWindowboxing(videoFile);
+                }
+                return removeWindowboxing(frame);
+            }
+            else
+            {
+                return frame;
+            }
+        }
+
+        public void toggleWindowboxing()
+        {
+            if (removeWindowbox)
+            {
+                removeWindowbox = false;
+                if (videoFile != processedVideoFile )
+                {
+                    resetWindowboxing();
+                }
+            }
+            else
+            {
+                removeWindowbox = true;
+                if (videoFile != null && videoFile != processedVideoFile)
+                {
+                    setWindowboxing(videoFile);
+                }
+            }
+        }
+
+        public void setVideoFile(String videoFile)
+        {
+            this.videoFile = videoFile;
+        }
+
+        private Mat removeWindowboxing(Mat frame)
         {
             if (letterboxingHeight != 0 || pillarboxingWidth != 0)
             {
                 Rectangle windowBoxing = new Rectangle(pillarboxingWidth, letterboxingHeight, frame.Width - pillarboxingWidth * 2, frame.Height - letterboxingHeight * 2);
                 Mat croppedFrame = new Mat(frame, windowBoxing);
+                frame.Dispose();
                 return croppedFrame;
             }
             else
@@ -31,11 +82,9 @@ namespace IWWplayer
             }
         }
 
-        private int findSmallestBoxSize(String videoFile, bool letterboxing)
+        private int findSmallestBoxSize(List <Mat> frames, bool letterboxing)
         {
             int smallestBoxSize = int.MaxValue;
-            int numberOfFrames = 10;
-            List<Mat> frames = gatherFrames(videoFile, numberOfFrames);
             foreach (Mat frame in frames)
             {
                 if (smallestBoxSize > CountBlackPixels(frame, letterboxing))
@@ -51,16 +100,18 @@ namespace IWWplayer
             return smallestBoxSize;
         }
 
-        public void resetWindowboxing()
+        private void resetWindowboxing()
         {
             letterboxingHeight = 0;
             pillarboxingWidth = 0;
         }
 
-        public void setWindowboxing(String videofile)
+        private void setWindowboxing(String videofile)
         {
-            letterboxingHeight = findSmallestBoxSize(videofile, true);
-            pillarboxingWidth = findSmallestBoxSize(videofile, false);
+            List <Mat> frames = gatherFrames(videofile, NUMBEROFFRAMES);
+            letterboxingHeight = findSmallestBoxSize(frames, LETTERBOXING);
+            pillarboxingWidth = findSmallestBoxSize(frames, PILLARBOXING);
+            processedVideoFile = videofile;
         }
 
         private List<Mat> gatherFrames(String videoFile, int numberOfFrames)
@@ -74,7 +125,7 @@ namespace IWWplayer
                 }
 
                 double totalFrames = capture.Get(Emgu.CV.CvEnum.CapProp.FrameCount);
-                double frameInterval = totalFrames / numberOfFrames; //magicnm
+                double frameInterval = totalFrames / numberOfFrames;
 
                 for (int i = 0; i < numberOfFrames; i++)
                 {
@@ -85,8 +136,8 @@ namespace IWWplayer
                     capture.Read(frame);
                     frames.Add(frame);
                 }
+                capture.Dispose();
             }
-
             return frames;
         }
 

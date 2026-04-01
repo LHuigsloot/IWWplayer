@@ -39,7 +39,8 @@ namespace IWWplayer
         private void loadMedia_Click(object sender, EventArgs e)
         {
             videoPlayer.loadVideo();
-            //audioPlayer is still WIP.
+            //audioPlayer is still WIP. Comments: Needs to be on a separate thread for performance.
+            //comments: needs a separate class and better integration.
             audioPlayer.URL = videoPlayer.getVideoFile();
             audioPlayer.controls.stop();
             if (videoPlayer.videoFileLoaded())
@@ -51,12 +52,14 @@ namespace IWWplayer
         private void playMedia_Click(object sender, EventArgs e)
         {
             videoPlayer.playVideo();
+            //WIP
             audioPlayer.controls.play();
         }
 
         private void pauseMedia_Click(object sender, EventArgs e)
         {
             videoPlayer.pauseMedia();
+            //WIP
             audioPlayer.controls.pause();
         }
     }

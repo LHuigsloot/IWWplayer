@@ -20,7 +20,6 @@ namespace IWWplayer
         private bool captureInProgress;
         private PictureBox videoBox;
         private String videoFile;
-        private bool removeWindowboxing = false;
         private Stopwatch stopwatch;
         private double frameTime;
 
@@ -54,12 +53,14 @@ namespace IWWplayer
             if (videoFile != null)
             {
                 videoFile = null;
+                videoProcessor.setVideoFile(null);
             }
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "MP4 files (*.mp4)|*.mp4";
             if(openFileDialog.ShowDialog() == DialogResult.OK)
             {
                 videoFile = openFileDialog.FileName;
+                videoProcessor.setVideoFile(videoFile);
             }
         }
 
@@ -91,12 +92,8 @@ namespace IWWplayer
 
         public void toggleWindowboxing()
         {
-            removeWindowboxing = !removeWindowboxing;
-            if (removeWindowboxing)
-            {
-                videoProcessor.resetWindowboxing();
-                videoProcessor.setWindowboxing(videoFile);
-            }
+            //A videoController class should be made to handle this, but for now it is here.
+            videoProcessor.toggleWindowboxing();
         }
 
         private void startNewCapture()
@@ -119,13 +116,11 @@ namespace IWWplayer
             if (capture != null && capture.Ptr != IntPtr.Zero && captureInProgress)
             {
                 stopwatch.Start();
+
                 Mat frame = new Mat();
                 capture.Retrieve(frame);
 
-                if (removeWindowboxing)
-                {
-                    frame = videoProcessor.removeWindowboxing(frame);
-                }
+                frame = videoProcessor.processFrame(frame);
            
                 crossThreadSafeDisplayFrame(frame);
 
@@ -136,6 +131,7 @@ namespace IWWplayer
                     System.Threading.Thread.Sleep((int)remainingTime);
                 }
                 frame.Dispose();
+
                 stopwatch.Reset();
             }
         }
@@ -161,6 +157,10 @@ namespace IWWplayer
             videoBox.Image = frame.ToBitmap();
             currentImage?.Dispose();
         }
+
+        //Things to implement:
+        //A buffer?
+        //Multithreading for processing and displaying.
 
     }
 }
