@@ -15,152 +15,114 @@ namespace IWWplayer
 
     internal class VideoPlayer
     {
+        private readonly double ASECOND_IN_MILLISECONDS = 1000.0;
 
         private VideoCapture capture;
         private bool captureInProgress;
-        private PictureBox videoBox;
-        private String videoFile;
         private Stopwatch stopwatch;
         private double frameTime;
+        private List<Mat> frameBuffer = new List<Mat>();
 
-        private VideoProcessor videoProcessor;
-
-        public VideoPlayer(PictureBox videoBox, VideoProcessor videoProcessor)
+        public VideoPlayer()
         {
-            this.videoBox = videoBox;
-            this.videoProcessor = videoProcessor;
             stopwatch = new Stopwatch();
         }
 
-        public bool videoFileLoaded()
-        {
-            return videoFile != null;
-        }
-
-        public String getVideoFile()
-        {
-            return videoFile;
-        }
-
-        public void loadVideo()
-        {
-            pauseMedia();
-            if (capture != null)
-            {
-                capture.Dispose();
-                capture = null;
-            }
-            if (videoFile != null)
-            {
-                videoFile = null;
-                videoProcessor.setVideoFile(null);
-            }
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "MP4 files (*.mp4)|*.mp4";
-            if(openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                videoFile = openFileDialog.FileName;
-                videoProcessor.setVideoFile(videoFile);
-            }
-        }
-
-        public void playVideo()
-        {
-            if (!captureInProgress)
-            {
-                if (capture == null)
-                {
-                    startNewCapture();
-                }
-                else
-                {
-                    startCapture();
-                }
-            }
-        }
-
-        public void pauseMedia()
-        {
-            if (capture != null && captureInProgress)
-            {
-                capture.ImageGrabbed -= processFrame;
-                capture.Pause();
-                captureInProgress = false;
-                stopwatch.Stop();
-            }
-        }
-
-        public void toggleWindowboxing()
-        {
-            //A videoController class should be made to handle this, but for now it is here.
-            videoProcessor.toggleWindowboxing();
-        }
-
-        private void startNewCapture()
+        public void prepareCapture(String videoFile)
         {
             capture = new VideoCapture(videoFile);
-            double aSecondInMilliSeconds = 1000.0;
-            frameTime = aSecondInMilliSeconds / capture.Get(Emgu.CV.CvEnum.CapProp.Fps);
+            frameTime = ASECOND_IN_MILLISECONDS / capture.Get(Emgu.CV.CvEnum.CapProp.Fps);
             startCapture();
         }
 
         private void startCapture()
         {
-            capture.Start();
-            captureInProgress = true;
-            capture.ImageGrabbed += processFrame;
-        }
-
-        private void processFrame(object sender, EventArgs e)
-        {
-            if (capture != null && capture.Ptr != IntPtr.Zero && captureInProgress)
+            if (capture != null)
             {
-                stopwatch.Start();
-
-                Mat frame = new Mat();
-                capture.Retrieve(frame);
-
-                frame = videoProcessor.processFrame(frame);
-           
-                crossThreadSafeDisplayFrame(frame);
-
-                double elapsedTime = stopwatch.Elapsed.TotalMilliseconds;
-                double remainingTime = frameTime - elapsedTime;
-                if (remainingTime > 0)
-                {
-                    System.Threading.Thread.Sleep((int)remainingTime);
-                }
-                frame.Dispose();
-
-                stopwatch.Reset();
+                capture.Start();
+                captureInProgress = true;
+                capture.ImageGrabbed += addFrameToBuffer;
             }
         }
 
-        private void crossThreadSafeDisplayFrame(Mat frame)
+        public void pauseCapture()
+        {
+            if (capture != null && captureInProgress)
+            {
+                capture.Pause();
+                captureInProgress = false;
+            }
+        }
+
+        public void playVideo(PictureBox videoBox)
+        {
+            lock (frameBuffer)
+            {
+                if (capture != null && frameBuffer.Count > 0)
+                {
+                    displayAtFramerate(videoBox);
+                }
+            }
+        }
+
+        private void addFrameToBuffer(object sender, EventArgs e)
+        {
+            if (frameBuffer.Count <= 100) //TODO: MAGICNUMBER
+            {
+                Mat frame = new Mat();
+                capture.Retrieve(frame);
+                if (!frame.IsEmpty)
+                {
+                    frameBuffer.Add(frame);
+                }
+            }
+            else
+            {
+                pauseCapture();
+            }
+        }
+
+        private void displayAtFramerate(PictureBox videoBox)
+        {
+            if (capture != null)
+            {
+                stopwatch.Start();
+                if (stopwatch.ElapsedMilliseconds >= frameTime)
+                {
+                    stopwatch.Reset();
+                    Mat frame = frameBuffer.First();
+                    crossThreadSafeDisplayFrame(frame, videoBox);
+                    frameBuffer.RemoveAt(0);
+                    frame.Dispose();
+                    if (frameBuffer.Count <= 100) //TODO: MAGINNUMBER
+                    {
+                       startCapture();
+                    }
+                }
+
+            }
+        }
+
+        private void crossThreadSafeDisplayFrame(Mat frame, PictureBox videoBox)
         {
             if (videoBox.InvokeRequired)
             {
                 videoBox.Invoke(new Action(() =>
                 {
-                    displayFrame(frame);
+                    displayFrame(frame, videoBox);
                 }));
             }
             else
             {
-                displayFrame(frame);
+                displayFrame(frame, videoBox);
             }
         }
 
-        private void displayFrame(Mat frame)
+        private void displayFrame(Mat frame, PictureBox videoBox)
         {
             var currentImage = videoBox.Image;
             videoBox.Image = frame.ToBitmap();
             currentImage?.Dispose();
         }
-
-        //Things to implement:
-        //A buffer?
-        //Multithreading for processing and displaying.
-
     }
 }
