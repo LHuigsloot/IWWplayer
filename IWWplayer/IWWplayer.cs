@@ -25,8 +25,7 @@ namespace IWWplayer
         {
             InitializeComponent();
             this.DoubleBuffered = true;
-            videoController = new VideoController(new VideoPlayer(), new VideoProcessor(), imageBox1);
-            audioPlayer = new WindowsMediaPlayer();
+            videoController = new VideoController(imageBox1);
         }
 
         private void removeWindowboxing_CheckedChanged(object sender, EventArgs e)
@@ -37,10 +36,6 @@ namespace IWWplayer
         private void loadMedia_Click(object sender, EventArgs e)
         {
             videoController.loadVideoFile();
-            //audioPlayer is still WIP. Comments: Needs to be on a separate thread for performance.
-            //comments: needs a separate class and better integration.
-            audioPlayer.URL = videoController.getVideoFile();
-            audioPlayer.controls.stop();
             if (videoController.videoFileLoaded())
             {
                 playMedia.Enabled = true;
@@ -50,15 +45,11 @@ namespace IWWplayer
         private void playMedia_Click(object sender, EventArgs e)
         {
             videoController.playVideo();
-            //WIP
-            audioPlayer.controls.play();
         }
 
         private void pauseMedia_Click(object sender, EventArgs e)
         {
             videoController.pauseVideo();
-            //WIP
-            audioPlayer.controls.pause();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,26 +15,28 @@ namespace IWWplayer
         private PictureBox videoBox;
 
         private String videoFile;
+        private bool playingVideo = false;
 
-        public VideoController(VideoPlayer videoPlayer, VideoProcessor videoProcessor, PictureBox videoBox)
+        public VideoController(PictureBox videoBox)
         {
-            this.videoPlayer = videoPlayer;
-            this.videoProcessor = videoProcessor;
+            this.videoPlayer = new VideoPlayer();
+            this.videoProcessor = new VideoProcessor();
             this.videoBox = videoBox;
-
         }
 
         public void playVideo()
         {
             if (videoFileLoaded())
             {
-                videoPlayer.playVideo(videoFile);
-            }
+                playingVideo = true;
+                Task.Run(() => videoPlayingLoop());
+            } 
         }
 
         public void pauseVideo()
         {
-            videoPlayer.pauseVideo();
+            playingVideo = false;
+            videoPlayer.pauseCapture();
         }
 
         public bool videoFileLoaded()
@@ -48,17 +51,31 @@ namespace IWWplayer
 
         public void loadVideoFile()
         {
+            if (videoFileLoaded())
+            {
+                videoPlayer.pauseCapture();
+            }
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "MP4 files (*.mp4)|*.mp4";
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
                 videoFile = openFileDialog.FileName;
             }
+            videoPlayer.prepareCapture(videoFile);
         }
 
         public void toggleWindowboxing()
         {
             videoProcessor.toggleWindowboxing(videoFile);
         }
+
+        private void videoPlayingLoop()
+        {
+            while (playingVideo)
+            {
+                videoPlayer.playVideo(videoBox);
+            }
+        }
+
     }
 }
